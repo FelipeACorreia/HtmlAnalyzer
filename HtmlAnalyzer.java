@@ -5,9 +5,6 @@ import java.util.stream.Collectors;
 
 public class HtmlAnalyzer {
 
-
-
-
     public static BufferedReader fetchHtmlContentFromUrl(String urlText) throws Exception {
 
         try {
@@ -26,19 +23,19 @@ public class HtmlAnalyzer {
     public static String extractTagName(String line) {
 
         return line.replace("<", "")
-                   .replace("/", "")
-                   .replace("\n", "")
-                   .replaceAll("[ \\t]+", "")
-                   .replace(">", "");
+                .replace("/", "")
+                .replace("\n", "")
+                .replaceAll("[ \\t]+", "")
+                .replace(">", "");
     }
 
+//    public static void validateTag(Stack<String> stack, String line) {
+//        if(line.contains("</")) {
+//
+//        }
+//    }
 
-    public static String formatTextContent(String line) {
 
-        return line.replaceAll("\n", "")
-                   .replaceFirst("^[ \\t]+", "");
-
-    }
     public static LinkedList<InnerText> extractAllTextFromHtml(BufferedReader input) throws Exception {
         Stack<String> tagStack = new Stack<>(); // this stack is used for the syntactic analysis used to validate the HTML formation.
         int id = 0;
@@ -46,6 +43,10 @@ public class HtmlAnalyzer {
         LinkedList<InnerText> innerTexts = new LinkedList<>();
 
         while ((inputLine = input.readLine()) != null) { // this while makes a syntactic analysis of the HTML received, and validates its formation.
+            if(inputLine.trim().isEmpty()){
+                continue;
+            }
+
             if (inputLine.contains("</")) {
 
                 if (!extractTagName(inputLine).equals(tagStack.pop())) { // in case the closing tag doesn't match with the stack's top, it throws an error.
@@ -57,7 +58,7 @@ public class HtmlAnalyzer {
             } else {
 
                 id++;
-                InnerText text = new InnerText(tagStack.size(),formatTextContent(inputLine), id);
+                InnerText text = new InnerText(tagStack.size(),inputLine.trim(), id);
 
                 innerTexts.add(text);
             }
@@ -73,20 +74,14 @@ public class HtmlAnalyzer {
 
 
     public static String getDeepestText(LinkedList<InnerText> innerTexts){
-        innerTexts.sort(Comparator.comparingInt(InnerText::getDepth));
+        InnerText deepestText = innerTexts.removeFirst();
 
 
-        InnerText deepestText = innerTexts.removeLast();
-
-        List<InnerText> similarDepthTexts = innerTexts.stream()  // get all texts that has the same depth.
-                                            .filter(text-> text.getDepth() == deepestText.getDepth())
-                                            .collect(Collectors.toList());
-
-
-        if(!similarDepthTexts.isEmpty()){ // in case there are 2 or more texts on the same depth, returns the text with the smallest id (first to appear).
-            similarDepthTexts.add(deepestText);
-            similarDepthTexts.sort(Comparator.comparingInt(InnerText::getId));
-            return similarDepthTexts.get(0).getText();
+        for(InnerText innerText : innerTexts){
+            //searches for the deepest text with the smallest id (in case 2 or more text contents have the same depth).
+            if(innerText.getDepth() > deepestText.getDepth() || (innerText.getDepth() == deepestText.getDepth() && innerText.getId() < deepestText.getId())){
+                deepestText = innerText;
+            }
         }
 
         return deepestText.getText();
@@ -111,5 +106,4 @@ public class HtmlAnalyzer {
         }
     }
 }
-
 
